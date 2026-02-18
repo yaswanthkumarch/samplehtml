@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_IP = "54.164.143.230"       // Your EC2 public IP
-        REMOTE_USER = "newuser"            // EC2 user
-        REMOTE_DIR = "/var/www/html"       // Nginx web root
+        REMOTE_IP = "54.164.143.230"       
+        REMOTE_USER = "newuser"            
+        REMOTE_DIR = "/var/www/html"       
     }
 
     stages {
@@ -27,8 +27,8 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'remote-vm-pass', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh '''
-                    echo "Copying files to remote VM..."
-                    sshpass -p "$PASS" scp -o StrictHostKeyChecking=no -r * $USER@${REMOTE_IP}:/home/$USER/
+                    echo "Copying web files to remote VM..."
+                    sshpass -p "$PASS" scp -o StrictHostKeyChecking=no -r index.html $USER@${REMOTE_IP}:/home/$USER/
                     '''
                 }
             }
@@ -38,14 +38,14 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'remote-vm-pass', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh '''
-                    sshpass -p "$PASS" ssh -tt -o StrictHostKeyChecking=no $USER@${REMOTE_IP} "
-                        echo 'Cleaning old files...'
-                        sudo rm -rf ${REMOTE_DIR}/*
-                        echo 'Copying new files...'
-                        sudo cp -r /home/$USER/* ${REMOTE_DIR}/
-                        echo 'Restarting Nginx...'
-                        sudo systemctl restart nginx
-                    "
+                    sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no $USER@${REMOTE_IP} << EOF
+                    echo 'Cleaning old files...'
+                    sudo rm -rf ${REMOTE_DIR}/*
+                    echo 'Copying new files...'
+                    sudo cp -r /home/$USER/* ${REMOTE_DIR}/
+                    echo 'Restarting Nginx...'
+                    sudo systemctl restart nginx
+                    EOF
                     '''
                 }
             }
