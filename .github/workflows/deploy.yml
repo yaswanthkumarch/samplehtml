@@ -1,0 +1,25 @@
+name: Deploy File to VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 143.110.252.102 >> ~/.ssh/known_hosts
+
+      - name: Create file on VM
+        run: |
+          ssh root@143.110.252.102 "echo 'File created from GitHub Actions at $(date)' > /home/one.txt"
