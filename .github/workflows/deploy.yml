@@ -24,7 +24,7 @@
 #         run: |
 #           ssh root@143.110.252.102 "echo 'File created from GitHub Actions at $(date)' > /home/one.txt"
 
-name: Deploy Next.js to VM
+name: Deploy Static HTML to VM
 
 on:
   push:
@@ -36,27 +36,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository into my-project
+      # Step 1: Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          path: my-project
 
-      # Step 2: Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      # Step 3: Build Next.js static site
-      - name: Build Next.js static site
-        working-directory: my-project
-        run: |
-          npm install
-          npm run build
-          npm run export
-
-      # Step 4: Deploy via SSH
+      # Step 2: Deploy files via SSH
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -65,13 +49,13 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           port: 22
           script: |
-            # Remove old files
+            # Clean old files
             sudo rm -rf /var/www/html/*
 
-            # Copy new build
-            sudo cp -r my-project/out/* /var/www/html/
+            # Copy all files from repo to web root
+            sudo cp -r * /var/www/html/
 
-            # Set proper ownership & permissions
+            # Set proper permissions
             sudo chown -R ${{ secrets.VM_USER }}:www-data /var/www/html
             sudo chmod -R 775 /var/www/html
 
