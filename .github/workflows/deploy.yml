@@ -36,28 +36,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Deploy files via SSH
-      - name: Deploy to VM
+      # 2️⃣ Deploy to VM via SSH
+      - name: Deploy HTML to VM
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
+          host: ${{ secrets.VM_HOST }}         # VM IP or hostname
+          username: ${{ secrets.VM_USER }}     # 'newuser' in your case
+          key: ${{ secrets.VM_SSH_KEY }}       # Private SSH key
           port: 22
           script: |
-            # Clean old files
+            # Remove old files
             sudo rm -rf /var/www/html/*
 
             # Copy all files from repo to web root
             sudo cp -r * /var/www/html/
 
-            # Set proper permissions
+            # Set correct permissions
             sudo chown -R ${{ secrets.VM_USER }}:www-data /var/www/html
             sudo chmod -R 775 /var/www/html
 
-            # Reload Nginx
-            sudo systemctl reload nginx
+            # Restart Nginx
+            sudo systemctl restart nginx
