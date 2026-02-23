@@ -1,4 +1,32 @@
-name: Deploy File to VM
+# name: Deploy File to VM
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Setup SSH
+#         run: |
+#           mkdir -p ~/.ssh
+#           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+#           chmod 600 ~/.ssh/id_ed25519
+#           ssh-keyscan -H 143.110.252.102 >> ~/.ssh/known_hosts
+
+#       - name: Create file on VM
+#         run: |
+#           ssh root@143.110.252.102 "echo 'File created from GitHub Actions at $(date)' > /home/one.txt"
+
+
+
+name: Deploy to VM
 
 on:
   push:
@@ -10,16 +38,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 143.110.252.102 >> ~/.ssh/known_hosts
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      - name: Create file on VM
+      # Step 3: Install dependencies & build
+      - name: Build Next.js static site
         run: |
-          ssh root@143.110.252.102 "echo 'File created from GitHub Actions at $(date)' > /home/one.txt"
+          npm install
+          npm run build
+          npm run export
+
+      # Step 4: Deploy via SSH
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: 22
+          script: |
+            # Clean old files
+            sudo rm -rf /var/www/html/*
+
+            # Copy new build
+            sudo cp -r out/* /var/www/html/
+
+            # Set proper ownership & permissions
+            sudo chown -R ${{ secrets.VM_USER }}:www-data /var/www/html
+            sudo chmod -R 775 /var/www/html
+
+            # Reload Nginx
+            sudo systemctl reload nginx
+
+
+
+
+
+
+
+
+
+
+
+
+
